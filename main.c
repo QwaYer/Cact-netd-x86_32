@@ -1,16 +1,16 @@
 /*
- * netd — сетевой сторожевой демон CactOS (аналог ifplugd/network monitor).
+ * netd — network watchdog daemon for CactOS (analog of ifplugd/network monitor).
  *
- * В отличие от networkd (который настраивает интерфейс) netd только следит
- * за состоянием единственной сетевой карты через /dev/net (CACT_NETCTL_NETCFG_GET)
- * и пишет события в журнал: поднятие/падение линка, смену IP/шлюза/DNS/MAC.
+ * Unlike networkd (which configures the interface) netd only watches
+ * the state of the single network card via /dev/net (CACT_NETCTL_NETCFG_GET)
+ * and writes events to the log: link up/down, change of IP/gateway/DNS/MAC.
  *
- * Запускается супервизором cgoct как /sbin/netd (см. Cgoct-x86_32).
+ * Started by the cgoct supervisor as /sbin/netd (see Cgoct-x86_32).
  *
- * /etc/netd.conf (все ключи необязательны; создаётся при первом запуске):
- *   file=/var/log/netd.log  — журнал событий
- *   interval=3              — период опроса линка (сек)
- *   console=0               — дублировать события на консоль
+ * /etc/netd.conf (all keys optional; created on first start):
+ *   file=/var/log/netd.log  — event log
+ *   interval=3              — link poll period (sec)
+ *   console=0               — duplicate events to the console
  */
 
 #include <stdint.h>
@@ -31,13 +31,13 @@ static int  interval_sec  = 3;
 static int  console_on    = 0;
 static int  out_fd        = -1;
 
-/* Конфиг по умолчанию: пишется при первом запуске, если файла ещё нет. */
+/* Default config: written on first start if the file does not exist yet. */
 static const char default_config[] =
     "# netd config - auto-generated on first start.\n"
     "#\n"
-    "# file     - журнал событий\n"
-    "# interval - период опроса линка (сек)\n"
-    "# console  - дублировать на /dev/console (0|1)\n"
+    "# file     - event log\n"
+    "# interval - link poll period (sec)\n"
+    "# console  - duplicate to /dev/console (0|1)\n"
     "\n"
     "file=/var/log/netd.log\n"
     "interval=3\n"
@@ -117,7 +117,7 @@ static void fmt_ip4(uint32_t v, char *buf, int cap) {
              (unsigned)((v >> 8) & 0xFF), (unsigned)(v & 0xFF));
 }
 
-/* Разница предыдущего и текущего состояния → одна строка в лог. */
+/* Difference between the previous and current state → one line to the log. */
 static void report_change(const cact_netcfg_get_t *prev,
                           const cact_netcfg_get_t *cur) {
     char line[160];
